@@ -76,6 +76,39 @@ and [Releases](https://github.com/0herculabs/hercufork360/releases) for availabl
 builds. Upstream Xenia Canary downloads do not include this fork's wheel changes.
 Local build executables and configuration files are not included in the source repository.
 
+## Can this release add wheel support to an existing Canary or Edge build?
+
+The release ZIP contains a complete **HercuFork360 executable**, not an add-on,
+DLL, or universal binary patch. Wheel input, the setup window, and native FFB
+are compiled into the emulator's HID, SDL, and kernel code.
+
+| What you do | Result |
+| --- | --- |
+| Extract our ZIP to its own folder and run its `xenia_canary.exe` | Run HercuFork360 with the implemented wheel/FFB support. |
+| Copy only our configuration into an unmodified Canary or Edge release | Does not add the implementation to that executable. |
+| Replace another release's executable with ours | Run HercuFork360; this does not preserve that other executable's version-specific changes. |
+| Port our source changes to a chosen Canary or Edge revision and rebuild it | Can produce a separate build combining that revision with wheel support, after integration and testing. |
+
+To use **this release**, extract it separately, run its executable, and configure
+**HID > Input setup...**. Keep your original emulator folder and settings so you
+can switch back. Configure and test each variant independently; our ZIP does
+not provide a configuration migration tool.
+
+To create a **Canary + FFB** or **Edge + FFB release**, a developer must use the
+source revision corresponding to the desired release, integrate this fork's
+HID/SDL backend, native `XInputdFF` exports, lifecycle handling and setup UI,
+resolve API/build differences, then compile and package a new executable.
+The first release's implementation is in commits `3390f297a` and `c935c37c0`.
+See the target project's own build instructions:
+[Xenia Canary](https://github.com/xenia-canary/xenia-canary) and
+[Xenia Edge (has207)](https://github.com/has207/xenia-edge).
+This is a source port, not a modification performed by extracting our ZIP.
+
+**Available and tested:** the HercuFork360 Windows x64 release, with user-reported
+MOZA R3 input and FFB in FM2, FM3, and FM4. A separate Edge executable has not
+been built or tested here. No compatibility with arbitrary prebuilt releases
+is claimed.
+
 ## Compatibility and bug reports
 
 The [upstream compatibility tracker](https://github.com/xenia-canary/game-compatibility/issues)
