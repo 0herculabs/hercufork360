@@ -41,6 +41,9 @@ Gamepad rumble is not converted into steering torque.
 
 ## Wheel setup
 
+![HercuFork360 input setup with MOZA R3 calibration and live steering and pedal bars](docs/images/1.png)
+
+
 1. Connect your wheel in PC mode and open **HID > Input setup...** without a game running.
 2. Choose **Steering wheel** under **Input method**, select your device, and
    complete **Calibration > Start guided calibration**.
