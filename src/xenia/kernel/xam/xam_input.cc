@@ -144,6 +144,9 @@ dword_result_t XamInputGetState_entry(dword_t user_index, dword_t flags,
     result = input_system->GetState(
         user_index, !flags ? X_INPUT_FLAG::X_INPUT_FLAG_GAMEPAD : flags,
         input_state);
+    if (result == X_ERROR_SUCCESS) {
+      input_system->WheelFFB(user_index, hid::WheelCommand::kHeartbeat);
+    }
   }
 
   if (input_state && result == X_ERROR_SUCCESS) {

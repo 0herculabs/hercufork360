@@ -17,6 +17,7 @@
 #include "xenia/hid/input_system.h"
 #include "xenia/kernel/user_module.h"
 #include "xenia/kernel/util/shim_utils.h"
+#include "xenia/kernel/util/wheel_ffb_bridge.h"
 #include "xenia/kernel/xboxkrnl/xboxkrnl_memory.h"
 #include "xenia/kernel/xboxkrnl/xboxkrnl_module.h"
 #include "xenia/kernel/xboxkrnl/xboxkrnl_ob.h"
@@ -659,6 +660,7 @@ X_RESULT KernelState::FinishLoadingUserModule(
   emulator_->patcher()->ApplyPatchesForTitle(memory_, module->title_id(),
                                              module->hash());
   emulator_->on_patch_apply();
+  InitializeWheelFFB(this, module.get());
   if (module->xex_module()) {
     module->xex_module()->Precompile();
   }
@@ -923,6 +925,8 @@ void KernelState::TerminateTitle() {
       ++it;
     }
   }
+
+  ResetWheelFFB(this);
 
   // Third: Unload all user modules (including the executable).
   for (size_t i = 0; i < user_modules_.size(); i++) {

@@ -21,6 +21,7 @@
 #endif
 
 #include "xenia/app/console_settings_dialog.h"
+#include "xenia/app/wheel_config_dialog.h"
 #include "xenia/app/content_list_dialog.h"
 #include "xenia/base/assert.h"
 #include "xenia/base/clock.h"
@@ -211,6 +212,7 @@ std::unique_ptr<EmulatorWindow> EmulatorWindow::Create(
 }
 
 EmulatorWindow::~EmulatorWindow() {
+  delete wheel_config_dialog_;
   // Notify the ImGui drawer that the immediate drawer is being destroyed.
   ShutdownGraphicsSystemPresenterPainting();
 }
@@ -882,6 +884,9 @@ bool EmulatorWindow::Initialize() {
   // HID menu.
   auto hid_menu = MenuItem::Create(MenuItem::Type::kPopup, "&HID");
   {
+    hid_menu->AddChild(MenuItem::Create(
+        MenuItem::Type::kString, "&Wheel setup...", "",
+        std::bind(&EmulatorWindow::ToggleWheelConfigDialog, this)));
     hid_menu->AddChild(MenuItem::Create(
         MenuItem::Type::kString, "&Toggle controller vibration", "",
         std::bind(&EmulatorWindow::ToggleControllerVibration, this)));
@@ -1710,6 +1715,15 @@ void EmulatorWindow::ToggleConsoleSettingsDialog() {
   }
 }
 
+void EmulatorWindow::ToggleWheelConfigDialog() {
+  if (wheel_config_dialog_) {
+    delete wheel_config_dialog_;
+  } else {
+    wheel_config_dialog_ = new WheelConfigDialog(imgui_drawer_.get(), *this,
+        [this] { wheel_config_dialog_ = nullptr; });
+  }
+}
+
 void EmulatorWindow::ToggleContentListDialog() {
   if (!content_list_dialog_) {
     content_list_dialog_ = std::unique_ptr<ContentListDialog>(
@@ -2452,6 +2466,7 @@ void EmulatorWindow::AddRecentlyLaunchedTitle(
 }
 
 void EmulatorWindow::ClearDialogs() {
+  delete wheel_config_dialog_;
   if (profile_config_dialog_) {
     profile_config_dialog_.reset();
   }

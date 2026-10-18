@@ -1,75 +1,86 @@
 <p align="center">
-    <a href="https://github.com/xenia-canary/xenia-canary/tree/canary_experimental/assets/icon">
-        <img height="256px" src="https://raw.githubusercontent.com/xenia-canary/xenia/master/assets/icon/256.png" />
-    </a>
+  <img height="192" src="assets/icon/256.png" alt="Xenia icon" />
 </p>
 
-<h1 align="center">Xenia Canary - Xbox 360 Emulator</h1>
+<h1 align="center">HercuFork360</h1>
+<p align="center">An experimental Xenia Canary fork with steering wheel input and native force feedback.</p>
 
-Xenia Canary is an experimental fork of the Xenia emulator. For more information, see the
-[Xenia Canary wiki](https://github.com/xenia-canary/xenia-canary/wiki).
+[HercuFork360](https://github.com/0herculabs/hercufork360) is maintained by
+[0herculabs](https://github.com/0herculabs) and is based on
+[Xenia Canary](https://github.com/xenia-canary/xenia-canary), the Xbox 360 emulator.
+This fork focuses on using PC steering wheels in compatible Xbox 360 games.
 
-Come chat with us about **emulator-related topics** on [Discord](https://discord.gg/Q9mxZf9).
-For developer chat join `#dev` but stay on topic. Lurking is not only fine, but encouraged!
-Please check the [FAQ](https://github.com/xenia-canary/xenia-canary/wiki/FAQ) page before asking questions.
-We've got jobs/lives/etc, so don't expect instant answers.
+## Steering wheel support
 
-Discussing illegal activities will get you banned.
+- SDL2 wheel input for player 1: steering, independent accelerator and brake,
+  buttons, paddles, and the first POV hat.
+- An English setup window inside the emulator: **HID > Wheel setup...**.
+- Device selection, guided axis calibration, live input display, and button mapping.
+- Native force feedback through the common Xbox 360 `XInputdFF` functions,
+  without patches tied to a particular game's executable addresses.
+- Constant force, spring, damper, inertia, and friction effects, subject to the
+  wheel driver's capabilities.
+- Adjustable force gain, steering force inversion, and output that stops when
+  focus or guest activity is lost.
 
-## Status
+**Confirmed by the user:** Forza Motorsport 2 steering wheel input and force
+feedback work with a **MOZA R3** on Windows. This confirms that combination;
+other games, wheel models, and platforms still need individual testing.
 
-Buildbot | Status | Releases
--------- | ------ | --------
-Canary (🪟, 🐧) | [![CI](https://github.com/xenia-canary/xenia-canary/actions/workflows/Orchestrator.yml/badge.svg?branch=canary_experimental)](https://github.com/xenia-canary/xenia-canary/actions/workflows/Orchestrator.yml/badge.svg?branch=canary_experimental) [![Codacy Badge](https://app.codacy.com/project/badge/Grade/cd506034fd8148309a45034925648499)](https://app.codacy.com/gh/xenia-canary/xenia-canary/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade) | [Latest](https://github.com/xenia-canary/xenia-canary/releases/latest) ◦ [All](https://github.com/xenia-canary/xenia-canary/releases) ◦ [Old](https://github.com/xenia-canary/xenia-canary-releases/releases)
+FFB remains experimental. Periodic and ramp effects, a proportional clutch,
+and pedals connected as a separate USB device are not currently implemented.
+Gamepad rumble is not converted into steering torque.
 
-### Experimental Netplay
+## Wheel setup
 
-Buildbot | Status | Releases
--------- | ------ | --------
-Windows | [![Codacy Badge](https://app.codacy.com/project/badge/Grade/d814c4b6aa444dcc9c1631e0224b2739)](https://app.codacy.com/gh/AdrianCassar/xenia-canary/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade) | [Latest](https://github.com/AdrianCassar/xenia-canary/releases/latest)
+1. Connect your wheel in PC mode and open **HID > Wheel setup...** without a game running.
+2. Select your device and complete **Calibration > Start guided calibration**.
+3. Configure **Buttons and paddles** and check the live steering and pedal bars.
+4. In **FFB**, select **Enable native FFB**. Start with **10% gain** and increase gradually.
+5. Select **Save and enable wheel**, then restart the emulator.
+6. Launch a wheel-compatible game and configure its own controls and FFB settings.
 
-## Quickstart
+See [the detailed wheel and FFB guide](docs/wheel-ffb.md) for configuration,
+limitations, diagnostics, and tests. The setup window uses English; the detailed
+setup guide is primarily in Spanish.
 
-See the [Quickstart](https://github.com/xenia-canary/xenia-canary/wiki/Quickstart) page.
+## Getting started
 
-## FAQ
+Use the [Xenia Canary quickstart](https://github.com/xenia-canary/xenia-canary/wiki/Quickstart)
+for general emulator setup and the
+[upstream FAQ](https://github.com/xenia-canary/xenia-canary/wiki/FAQ) for common questions.
 
-See the [frequently asked questions](https://github.com/xenia-canary/xenia-canary/wiki/FAQ) page.
+Check this fork's [Actions](https://github.com/0herculabs/hercufork360/actions)
+and [Releases](https://github.com/0herculabs/hercufork360/releases) for available
+builds. Upstream Xenia Canary downloads do not include this fork's wheel changes.
+Local build executables and configuration files are not included in the source repository.
 
-## Game Compatibility
+## Compatibility and bug reports
 
-See the [Game compatibility list](https://github.com/xenia-canary/game-compatibility/issues)
-for currently tracked games, and feel free to contribute your own updates,
-screenshots, and information there following the [existing conventions](https://github.com/xenia-canary/game-compatibility/blob/canary/README.md).
+The [upstream compatibility tracker](https://github.com/xenia-canary/game-compatibility/issues)
+tracks general game emulation. It does not verify this fork's wheel or FFB support.
+Report fork-specific issues in
+[HercuFork360 Issues](https://github.com/0herculabs/hercufork360/issues), including
+the game/version, wheel model, driver version, and relevant wheel log messages.
 
-## Building
+## Building and testing
 
-See [building.md](docs/building.md) for setup and information about the
-`xb` script. When writing code, check the [style guide](docs/style_guide.md)
-and be sure to run clang-format!
+See [building.md](docs/building.md) for dependencies and the usual build workflow.
+Optional wheel tests can be enabled in CMake with `-DXENIA_BUILD_WHEEL_TESTS=ON`.
+They cover calibration, virtual wheel input, effect translation, the native FFB
+protocol, FM2's five-slot activation sequence, and the PowerPC guest hook helper.
+They do not replace physical wheel testing.
 
-## Contributors Wanted!
+Follow the [style guide](docs/style_guide.md) and
+[contribution guidelines](.github/CONTRIBUTING.md) when contributing.
 
-Have some spare time, know advanced C++, and want to write an emulator?
-Contribute! There's a ton of work that needs to be done, a lot of which
-is wide open greenfield fun.
+## Credits and license
 
-**For general rules and guidelines please see [CONTRIBUTING.md](.github/CONTRIBUTING.md).**
+Thanks to the Xenia and Xenia Canary contributors for the emulator this fork
+builds on. The native wheel effect translation was adapted from the local
+FM4-recomp implementation; game physics and force calculations remain in the game.
+No game executables, generated game code, or game assets are included.
 
-Fixes and optimizations are always welcome (please!), but in addition to
-that there are some major work areas still untouched:
-
-* Help work through [missing functionality/bugs in games](https://github.com/xenia-canary/xenia-canary/labels/compat)
-* Reduce the size of Xenia's [huge log files](https://github.com/xenia-canary/xenia-canary/issues/1526)
-* Skilled with Linux? A strong contributor is needed to [help with porting](https://github.com/xenia-canary/xenia-canary/labels/platform-linux)
-
-See more projects [good for contributors](https://github.com/xenia-canary/xenia-canary/labels/good%20first%20issue). It's a good idea to ask on Discord and check the issues page before beginning work on
-something.
-
-## Disclaimer
-
-The goal of this project is to experiment, research, and educate on the topic
-of emulation of modern devices and operating systems. **It is not for enabling
-illegal activity**. All information is obtained via reverse engineering of
-legally purchased devices and games and information made public on the internet
-(you'd be surprised what's indexed on Google...).
+HercuFork360 is an independent fork and is not an official Xenia Canary release.
+See [LICENSE](LICENSE) and the individual third-party licenses for licensing terms.
+The project is intended for emulation research and use with legally obtained games.

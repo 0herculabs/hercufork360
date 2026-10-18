@@ -18,6 +18,7 @@
 #include "SDL.h"
 #include "third_party/rapidcsv/src/rapidcsv.h"
 #include "xenia/hid/input_driver.h"
+#include "xenia/hid/sdl/sdl_wheel.h"
 
 #define HID_SDL_USER_COUNT 4
 #define HID_SDL_THUMB_THRES 0x4E00
@@ -45,6 +46,8 @@ class SDLInputDriver final : public InputDriver {
   X_RESULT GetKeystroke(uint32_t user_index, uint32_t flags,
                         X_INPUT_KEYSTROKE* out_keystroke) override;
   virtual InputType GetInputType() const override;
+  bool WheelFFB(uint32_t user_index, WheelCommand command,
+                const WheelEffect& effect) override;
 
  private:
   struct ControllerState {
@@ -99,6 +102,8 @@ class SDLInputDriver final : public InputDriver {
   std::atomic<bool> sdl_pumpevents_queued_;
   std::array<ControllerState, HID_SDL_USER_COUNT> controllers_;
   std::array<KeystrokeState, HID_SDL_USER_COUNT> keystroke_states_;
+  SDLWheel wheel_;
+  ControllerState wheel_controller_{};
 };
 
 }  // namespace sdl

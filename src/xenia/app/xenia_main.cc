@@ -71,15 +71,15 @@
 #if XE_PLATFORM_WIN32
 #define APU_OPTIONS "[any, nop, sdl, xaudio2]"
 #define GPU_OPTIONS "[any, d3d12, vulkan, null]"
-#define HID_OPTIONS "[any, nop, sdl, keyboard, xinput]"
+#define HID_OPTIONS "[any, nop, sdl, wheel, keyboard, xinput]"
 #elif XE_PLATFORM_LINUX
 #define APU_OPTIONS "[any, alsa, nop, sdl]"
 #define GPU_OPTIONS "[any, vulkan, null]"
-#define HID_OPTIONS "[any, nop, sdl, keyboard]"
+#define HID_OPTIONS "[any, nop, sdl, wheel, keyboard]"
 #else
 #define APU_OPTIONS "[any, nop, sdl]"
 #define GPU_OPTIONS "[any, vulkan, null]"
-#define HID_OPTIONS "[any, nop, sdl]"
+#define HID_OPTIONS "[any, nop, sdl, wheel]"
 #endif
 
 DEFINE_string(apu, "any", "Audio system. Use: " APU_OPTIONS, "APU");
@@ -449,6 +449,11 @@ std::vector<std::unique_ptr<hid::InputDriver>> EmulatorApp::CreateInputDrivers(
   if (cvars::hid.compare("nop") == 0) {
     drivers.emplace_back(
         xe::hid::nop::Create(window, EmulatorWindow::kZOrderHidInput));
+#if !XE_PLATFORM_ANDROID
+  } else if (cvars::hid == "wheel") {
+    auto driver = xe::hid::sdl::CreateWheel(window, EmulatorWindow::kZOrderHidInput);
+    if (XSUCCEEDED(driver->Setup())) drivers.emplace_back(std::move(driver));
+#endif
   } else {
     Factory<hid::InputDriver, ui::Window*, size_t> factory;
 #if XE_PLATFORM_WIN32

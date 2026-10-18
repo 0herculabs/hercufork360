@@ -89,6 +89,13 @@ bool PPCHIRBuilder::Emit(GuestFunction* function, uint32_t flags) {
 
   function_ = function;
   start_address_ = function_->address();
+  if (function_->is_guest_hook()) {
+    SourceOffset(start_address_);
+    ContextBarrier();
+    CallExtern(function_);
+    Return();
+    return Finalize();
+  }
   // chrispy: i've seen this one happen, not sure why but i think from trying to
   // precompile twice i've also seen ones with a start and end address that are
   // the same...

@@ -31,6 +31,7 @@ namespace app {
 
 class ConsoleSettingsDialog;
 class ContentListDialog;
+class WheelConfigDialog;
 
 struct RecentTitleEntry {
   std::string title_name;
@@ -98,6 +99,7 @@ class EmulatorWindow {
   void ToggleProfilesConfigDialog();
   void ToggleXMPConfigDialog();
   void ToggleConsoleSettingsDialog();
+  void ToggleWheelConfigDialog();
   void ToggleContentListDialog();
 
   void SetHotkeysState(bool enabled) { disable_hotkeys_ = !enabled; }
@@ -322,6 +324,7 @@ class EmulatorWindow {
 
   std::unique_ptr<DisplayConfigDialog> display_config_dialog_;
   std::unique_ptr<ConsoleSettingsDialog> console_settings_dialog_;
+  WheelConfigDialog* wheel_config_dialog_ = nullptr;
   std::unique_ptr<ContentListDialog> content_list_dialog_;
   // Storing pointers and toggling dialog state is useful for broadcasting
   // messages back to guest.

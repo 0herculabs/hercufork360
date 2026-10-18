@@ -71,6 +71,7 @@ SDLInputDriver::~SDLInputDriver() {
       window()->app_context().ExecutePendingFunctionsFromUIThread();
     });
   }
+  window()->app_context().CallInUIThreadSynchronous([this]() { wheel_.Close(); });
   for (size_t i = 0; i < controllers_.size(); i++) {
     if (controllers_.at(i).sdl) {
       SDL_GameControllerClose(controllers_.at(i).sdl);
@@ -137,6 +138,7 @@ X_STATUS SDLInputDriver::Setup() {
     sdl_gamecontroller_initialized_ = true;
 
     LoadGameControllerDB();
+    wheel_.Update(window()->HasFocus());
   });
 
   return (sdl_events_initialized_ && sdl_gamecontroller_initialized_)
@@ -222,6 +224,11 @@ X_RESULT SDLInputDriver::GetCapabilities(uint32_t user_index, uint32_t flags,
 
   QueueControllerUpdate();
 
+  if (user_index == 0 && wheel_.Enabled()) {
+    return wheel_.GetCapabilities(out_caps) ? X_ERROR_SUCCESS
+                                           : X_ERROR_DEVICE_NOT_CONNECTED;
+  }
+
   auto controller = GetControllerState(user_index);
   if (!controller) {
     return X_ERROR_DEVICE_NOT_CONNECTED;
@@ -254,7 +261,9 @@ X_RESULT SDLInputDriver::GetState(uint32_t user_index,
     controller->state.packet_number++;
     controller->state_changed = false;
   }
-  std::memcpy(out_state, &controller->state, sizeof(*out_state));
+  if (out_state) {
+    std::memcpy(out_state, &controller->state, sizeof(*out_state));
+  }
   return X_ERROR_SUCCESS;
 }
 
@@ -266,6 +275,10 @@ X_RESULT SDLInputDriver::SetState(uint32_t user_index,
   }
 
   QueueControllerUpdate();
+
+  if (user_index == 0 && wheel_.Enabled()) {
+    return wheel_.GetState(nullptr) ? X_ERROR_SUCCESS : X_ERROR_DEVICE_NOT_CONNECTED;
+  }
 
   auto controller = GetControllerState(user_index);
   if (!controller) {
@@ -432,6 +445,13 @@ X_RESULT SDLInputDriver::GetKeystroke(uint32_t users, uint32_t flags,
 }
 
 InputType SDLInputDriver::GetInputType() const { return InputType::Controller; }
+
+bool SDLInputDriver::WheelFFB(uint32_t user_index, WheelCommand command,
+                              const WheelEffect& effect) {
+  if (user_index != 0 || !wheel_.Enabled()) return false;
+  QueueControllerUpdate();
+  return wheel_.Command(command, effect);
+}
 
 void SDLInputDriver::HandleEvent(const SDL_Event& event) {
   // This callback will likely run on the thread that posts the event, which
@@ -683,6 +703,9 @@ std::optional<size_t> SDLInputDriver::GetControllerIndexFromInstanceID(
 
 SDLInputDriver::ControllerState* SDLInputDriver::GetControllerState(
     uint32_t user_index) {
+  if (user_index == 0 && wheel_.Enabled()) {
+    return wheel_.GetState(&wheel_controller_.state) ? &wheel_controller_ : nullptr;
+  }
   if (user_index >= controllers_.size()) {
     return nullptr;
   }
@@ -889,6 +912,7 @@ void SDLInputDriver::QueueControllerUpdate() {
   if (!is_queued) {
     window()->app_context().CallInUIThread([this]() {
       SDL_PumpEvents();
+      wheel_.Update(window()->HasFocus());
       sdl_pumpevents_queued_ = false;
     });
   }

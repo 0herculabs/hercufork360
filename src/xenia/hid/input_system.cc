@@ -46,6 +46,14 @@ void InputSystem::AddDriver(std::unique_ptr<InputDriver> driver) {
   drivers_.push_back(std::move(driver));
 }
 
+bool InputSystem::WheelFFB(uint32_t user_index, WheelCommand command,
+                           const WheelEffect& effect) {
+  for (auto& driver : drivers_) {
+    if (driver->WheelFFB(user_index, command, effect)) return true;
+  }
+  return false;
+}
+
 void InputSystem::UpdateUsedSlot(InputDriver* driver, uint8_t slot,
                                  bool connected) {
   if (slot == XUserIndexAny) {

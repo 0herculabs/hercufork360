@@ -14,6 +14,7 @@
 #include <functional>
 
 #include "xenia/hid/input.h"
+#include "xenia/hid/wheel_ffb.h"
 #include "xenia/ui/window.h"
 #include "xenia/xbox.h"
 
@@ -45,6 +46,11 @@ class InputDriver {
                                 X_INPUT_KEYSTROKE* out_keystroke) = 0;
 
   virtual InputType GetInputType() const = 0;
+
+  virtual bool WheelFFB(uint32_t user_index, WheelCommand command,
+                        const WheelEffect& effect) {
+    return false;
+  }
 
  protected:
   explicit InputDriver(xe::ui::Window* window, size_t window_z_order)

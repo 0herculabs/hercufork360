@@ -35,6 +35,7 @@ message(STATUS "Target architecture: XE_TARGET_AARCH64=${XE_TARGET_AARCH64} XE_T
 
 # Options
 option(XENIA_BUILD_TESTS "Build test suites" OFF)
+option(XENIA_BUILD_WHEEL_TESTS "Build wheel translation and virtual joystick tests" OFF)
 option(XENIA_BUILD_MISC "Build misc subprojects (trace viewers, shader compiler, vfs-dump, demos)" OFF)
 option(XENIA_ENABLE_GPU_TRACE "Enable GPU trace capture in Release" OFF)
 
@@ -46,8 +47,10 @@ endif()
 add_compile_definitions(XE_OPTION_PROFILING=0)
 add_compile_definitions(XE_OPTION_PROFILING_UI=0)
 
-if(XENIA_BUILD_TESTS)
+if(XENIA_BUILD_TESTS OR XENIA_BUILD_WHEEL_TESTS)
   enable_testing()
+endif()
+if(XENIA_BUILD_TESTS)
   include(${PROJECT_SOURCE_DIR}/third_party/catch/contrib/Catch.cmake)
 endif()
 

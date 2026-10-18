@@ -20,6 +20,8 @@ namespace sdl {
 
 std::unique_ptr<InputDriver> Create(xe::ui::Window* window,
                                     size_t window_z_order);
+std::unique_ptr<InputDriver> CreateWheel(xe::ui::Window* window,
+                                         size_t window_z_order);
 
 }  // namespace sdl
 }  // namespace hid

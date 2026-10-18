@@ -140,6 +140,13 @@ class GuestFunction : public Function {
   ExternHandler extern_handler() const { return extern_handler_; }
   Export* export_data() const { return export_data_; }
   void SetupExtern(ExternHandler handler, Export* export_data = nullptr);
+  // Intercept an ordinary guest function without replacing its instructions.
+  // Import thunks continue to use their explicit sc instruction.
+  void SetupGuestHook(ExternHandler handler) {
+    SetupExtern(handler);
+    guest_hook_ = true;
+  }
+  bool is_guest_hook() const { return guest_hook_; }
 
   const SourceMapEntry* LookupGuestAddress(uint32_t guest_address) const;
   const SourceMapEntry* LookupHIROffset(uint32_t offset) const;
@@ -159,6 +166,7 @@ class GuestFunction : public Function {
   FunctionTraceData trace_data_;
   std::vector<SourceMapEntry> source_map_;
   ExternHandler extern_handler_ = nullptr;
+  bool guest_hook_ = false;
   Export* export_data_ = nullptr;
 };
 

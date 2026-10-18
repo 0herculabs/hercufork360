@@ -92,6 +92,7 @@ node_modules/.bin/
 /scratch/
 
 /build/
+/build-msvc/
 /build-arm64/
 /build-x64/
 

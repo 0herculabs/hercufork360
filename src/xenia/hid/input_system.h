@@ -39,6 +39,9 @@ class InputSystem {
 
   void AddDriver(std::unique_ptr<InputDriver> driver);
 
+  bool WheelFFB(uint32_t user_index, WheelCommand command,
+                const WheelEffect& effect = {});
+
   X_RESULT GetCapabilities(uint32_t user_index, uint32_t flags,
                            X_INPUT_CAPABILITIES* out_caps);
   X_RESULT GetState(uint32_t user_index, uint32_t flags,

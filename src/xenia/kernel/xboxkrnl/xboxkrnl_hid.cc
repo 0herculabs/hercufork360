@@ -8,6 +8,7 @@
  */
 
 #include "xenia/kernel/util/shim_utils.h"
+#include "xenia/kernel/util/wheel_ffb_bridge.h"
 #include "xenia/kernel/xboxkrnl/xboxkrnl_private.h"
 
 namespace xe {
@@ -28,6 +29,48 @@ dword_result_t HidReadKeys_entry(dword_t unk1, unknown_t unk2, unknown_t unk3) {
   return 0xC000009D;
 }
 DECLARE_XBOXKRNL_EXPORT1(HidReadKeys, kInput, kStub);
+
+dword_result_t XInputdFFGetDeviceInfo_entry(dword_t user, dword_t info) {
+  return DispatchWheelFFB(kernel_state(), WheelFFBRequest::kInfo, user, info, 0,
+                          0);
+}
+DECLARE_XBOXKRNL_EXPORT1(XInputdFFGetDeviceInfo, kInput, kSketchy);
+
+dword_result_t XInputdFFSetEffect_entry(dword_t user, dword_t effects,
+                                        dword_t count, dword_t completion) {
+  return DispatchWheelFFB(kernel_state(), WheelFFBRequest::kSet, user, effects,
+                          count, completion);
+}
+DECLARE_XBOXKRNL_EXPORT1(XInputdFFSetEffect, kInput, kSketchy);
+
+dword_result_t XInputdFFUpdateEffect_entry(dword_t user, dword_t effect,
+                                           dword_t flags, dword_t completion) {
+  return DispatchWheelFFB(kernel_state(), WheelFFBRequest::kUpdate, user,
+                          effect, flags, completion);
+}
+DECLARE_XBOXKRNL_EXPORT1(XInputdFFUpdateEffect, kInput, kSketchy);
+
+dword_result_t XInputdFFEffectOperation_entry(dword_t user, dword_t operations,
+                                              dword_t count, dword_t flags,
+                                              dword_t completion) {
+  return DispatchWheelFFB(kernel_state(), WheelFFBRequest::kOperation, user,
+                          operations, count, completion);
+}
+DECLARE_XBOXKRNL_EXPORT1(XInputdFFEffectOperation, kInput, kSketchy);
+
+dword_result_t XInputdFFDeviceControl_entry(dword_t user, dword_t command,
+                                            dword_t completion) {
+  return DispatchWheelFFB(kernel_state(), WheelFFBRequest::kControl, user,
+                          command, 0, completion);
+}
+DECLARE_XBOXKRNL_EXPORT1(XInputdFFDeviceControl, kInput, kSketchy);
+
+dword_result_t XInputdFFSetDeviceGain_entry(dword_t user, dword_t gain,
+                                            dword_t completion) {
+  return DispatchWheelFFB(kernel_state(), WheelFFBRequest::kGain, user, gain, 0,
+                          completion);
+}
+DECLARE_XBOXKRNL_EXPORT1(XInputdFFSetDeviceGain, kInput, kSketchy);
 
 }  // namespace xboxkrnl
 }  // namespace kernel
