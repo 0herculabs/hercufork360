@@ -28,6 +28,8 @@ class WheelConfigDialog final : public ui::ImGuiDialog {
   void DrawControls();
   EmulatorWindow& window_;
   std::function<void()> closed_;
+  bool use_wheel_ = false;
+  std::string controller_backend_ = "any";
   bool initialized_ = false;
   bool restore_gamepad_navigation_ = false;
   SDL_Joystick* joystick_ = nullptr;

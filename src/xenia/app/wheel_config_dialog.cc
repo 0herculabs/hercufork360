@@ -10,6 +10,8 @@
 #include "xenia/helper/sdl/sdl_helper.h"
 #include "xenia/hid/input_system.h"
 
+DECLARE_string(hid);
+DECLARE_bool(wheel_enabled);
 DECLARE_string(wheel_name);
 DECLARE_string(wheel_buttons);
 DECLARE_bool(wheel_calibrated);
@@ -66,6 +68,12 @@ WheelConfigDialog::WheelConfigDialog(ui::ImGuiDrawer* drawer,
   restore_gamepad_navigation_ =
       (GetIO().ConfigFlags & ImGuiConfigFlags_NavEnableGamepad) != 0;
   GetIO().ConfigFlags &= ~ImGuiConfigFlags_NavEnableGamepad;
+  use_wheel_ = cvars::wheel_enabled &&
+               (cvars::hid == "wheel" ||
+                (cvars::hid != "xinput" && !cvars::wheel_name.empty()));
+  if (cvars::hid == "sdl" || cvars::hid == "xinput") {
+    controller_backend_ = cvars::hid;
+  }
   selected_ = cvars::wheel_name;
   calibration_ = {cvars::wheel_steering_axis,
                   cvars::wheel_throttle_axis,
@@ -230,13 +238,19 @@ void WheelConfigDialog::Poll() {
 }
 
 void WheelConfigDialog::Save() {
-  if (!joystick_ || selected_.empty() || wizard_.Active() ||
-      window_.emulator()->is_title_open()) {
+  if (window_.emulator()->is_title_open() ||
+      (use_wheel_ && (!joystick_ || selected_.empty() || wizard_.Active()))) {
     return;
   }
   binding_ = -1;
   window_.app_context().CallInUIThreadSynchronous([this] {
     auto lock = window_.emulator()->input_system()->lock();
+    Store("wheel_enabled", use_wheel_);
+    if (!use_wheel_) {
+      Store("hid", controller_backend_);
+      config::SaveConfig();
+      return;
+    }
     Store("hid", std::string("wheel"));
     Store("wheel_name", selected_);
     Store("wheel_calibrated", calibration_.valid);
@@ -269,7 +283,7 @@ void WheelConfigDialog::Save() {
     Store("wheel_buttons", serialized);
     config::SaveConfig();
   });
-  status_ = "Saved. Restart the emulator to activate these wheel settings.";
+  status_ = "Saved. Restart the emulator to apply the selected input method.";
 }
 
 void WheelConfigDialog::DrawControls() {
@@ -308,151 +322,197 @@ void WheelConfigDialog::OnDraw(ImGuiIO& io) {
   ImGui::SetNextWindowSize(ImVec2(std::min(700.0f, io.DisplaySize.x - 32),
                                   std::min(700.0f, io.DisplaySize.y - 50)),
                            ImGuiCond_FirstUseEver);
-  if (ImGui::Begin("Wheel setup", &open)) {
+  if (ImGui::Begin("Input setup", &open)) {
+    int method = use_wheel_ ? 1 : 0;
+    if (ImGui::Combo("Input method", &method, "Controller\0Steering wheel\0")) {
+      use_wheel_ = method == 1;
+      wizard_.Cancel();
+      binding_ = -1;
+      status_.clear();
+    }
     ImGui::TextWrapped(
-        "Select your wheel. Changes are only applied when saved.");
-    ImGui::SetNextItemWidth(-140);
-    if (ImGui::BeginCombo("##wheel", selected_.empty() ? "Select a device..."
-                                                       : selected_.c_str())) {
-      for (auto& device : devices_) {
-        ImGui::PushID(device.index);
-        if (ImGui::Selectable(device.name.c_str(), device.name == selected_)) {
-          Select(device.index);
+        "Changes are applied after saving and restarting the emulator.");
+    if (!use_wheel_) {
+      const char* preview = controller_backend_ == "xinput"
+                                ? "Xbox controller (XInput)"
+                            : controller_backend_ == "sdl" ? "Controller (SDL)"
+                                                           : "Automatic";
+      if (ImGui::BeginCombo("Controller backend", preview)) {
+        if (ImGui::Selectable("Automatic", controller_backend_ == "any")) {
+          controller_backend_ = "any";
         }
-        ImGui::PopID();
+#if XE_PLATFORM_WIN32
+        if (ImGui::Selectable("Xbox controller (XInput)",
+                              controller_backend_ == "xinput")) {
+          controller_backend_ = "xinput";
+        }
+#endif
+        if (ImGui::Selectable("Controller (SDL)",
+                              controller_backend_ == "sdl")) {
+          controller_backend_ = "sdl";
+        }
+        ImGui::EndCombo();
       }
-      ImGui::EndCombo();
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Refresh")) {
-      Refresh();
-    }
-    if (devices_.empty()) {
       ImGui::TextWrapped(
-          "No devices detected. Connect your wheel in PC mode and click "
-          "Refresh.");
+          "Wheel input and FFB will be disabled. Your wheel device, "
+          "calibration, buttons and FFB settings are kept for next time.");
     }
-    if (joystick_) {
-      ImGui::Text("Connected: %d axes, %d buttons", int(axes_.size()),
-                  int(buttons_.size()));
-    }
-    ImGui::Separator();
-    ImGui::BeginDisabled(!joystick_);
-    if (ImGui::BeginTabBar("wheel-tabs")) {
-      if (ImGui::BeginTabItem("Calibration")) {
-        if (!wizard_.Active()) {
-          if (ImGui::Button(calibration_.valid ? "Recalibrate"
-                                               : "Start guided calibration")) {
-            wizard_.Start();
-            binding_ = -1;
-          }
-          if (calibration_.valid) {
-            ImGui::Text(
-                "Calibrated: steering axis %d, throttle axis %d, brake axis %d",
-                calibration_.steering, calibration_.throttle,
-                calibration_.brake);
-          }
-          DrawControls();
-        } else {
-          ImGui::Spacing();
-          ImGui::Text("Step %d of 8", wizard_.step + 1);
-          ImGui::ProgressBar(float(wizard_.step) / 8, ImVec2(-1, 0));
-          ImGui::TextWrapped("%s", kPrompts[wizard_.step]);
-          ImGui::TextWrapped(
-              "Hold that position and click Capture and continue.");
-          if (ImGui::Button(wizard_.step == 7 ? "Finish calibration"
-                                              : "Capture and continue")) {
-            if (wizard_.Capture(axes_) && wizard_.step == 8) {
-              calibration_ = wizard_.result;
-              status_ =
-                  "Calibration complete. Check the live indicators and save "
-                  "your changes.";
-            }
-          }
-          ImGui::SameLine();
-          if (ImGui::Button("Cancel calibration")) {
-            wizard_.Cancel();
-          }
-          if (!wizard_.error.empty()) {
-            ImGui::TextWrapped("%s", wizard_.error.c_str());
-          }
-          if (wizard_.step >= 2) {
-            ImGui::Text("Throttle detected: axis %d", wizard_.result.throttle);
-          }
-          if (wizard_.step >= 4) {
-            ImGui::Text("Brake detected: axis %d", wizard_.result.brake);
-          }
-          if (wizard_.step >= 6) {
-            ImGui::Text("Steering detected: axis %d", wizard_.result.steering);
-          }
-        }
-        ImGui::EndTabItem();
-      }
-      if (ImGui::BeginTabItem("Buttons and paddles")) {
-        ImGui::TextWrapped(
-            "Click Assign, then press a button or paddle on your wheel. The "
-            "first POV hat automatically controls the D-pad.");
-        for (size_t i = 0; i < bindings_.size(); ++i) {
-          ImGui::PushID(int(i));
-          ImGui::Text("%s: %s", kActions[i],
-                      bindings_[i] < 0 ? "Unassigned"
-                                       : std::to_string(bindings_[i]).c_str());
-          ImGui::SameLine(300);
-          if (ImGui::Button(binding_ == int(i) ? "Press a button..."
-                                               : "Assign")) {
-            binding_ = int(i);
-            wizard_.Cancel();
-          }
-          ImGui::SameLine();
-          if (ImGui::Button("Clear")) {
-            bindings_[i] = -1;
-            binding_ = -1;
+    if (use_wheel_) {
+      ImGui::TextWrapped(
+          "Select your wheel. Changes are only applied when saved.");
+      ImGui::SetNextItemWidth(-140);
+      if (ImGui::BeginCombo("##wheel", selected_.empty() ? "Select a device..."
+                                                         : selected_.c_str())) {
+        for (auto& device : devices_) {
+          ImGui::PushID(device.index);
+          if (ImGui::Selectable(device.name.c_str(),
+                                device.name == selected_)) {
+            Select(device.index);
           }
           ImGui::PopID();
         }
-        if (binding_ >= 0 && ImGui::Button("Cancel assignment")) {
-          binding_ = -1;
+        ImGui::EndCombo();
+      }
+      ImGui::SameLine();
+      if (ImGui::Button("Refresh")) {
+        Refresh();
+      }
+      if (devices_.empty()) {
+        ImGui::TextWrapped(
+            "No devices detected. Connect your wheel in PC mode and click "
+            "Refresh.");
+      }
+      if (joystick_) {
+        ImGui::Text("Connected: %d axes, %d buttons", int(axes_.size()),
+                    int(buttons_.size()));
+      }
+      ImGui::Separator();
+      ImGui::BeginDisabled(!joystick_);
+      if (ImGui::BeginTabBar("wheel-tabs")) {
+        if (ImGui::BeginTabItem("Calibration")) {
+          if (!wizard_.Active()) {
+            if (ImGui::Button(calibration_.valid
+                                  ? "Recalibrate"
+                                  : "Start guided calibration")) {
+              wizard_.Start();
+              binding_ = -1;
+            }
+            if (calibration_.valid) {
+              ImGui::Text(
+                  "Calibrated: steering axis %d, throttle axis %d, brake axis "
+                  "%d",
+                  calibration_.steering, calibration_.throttle,
+                  calibration_.brake);
+            }
+            DrawControls();
+          } else {
+            ImGui::Spacing();
+            ImGui::Text("Step %d of 8", wizard_.step + 1);
+            ImGui::ProgressBar(float(wizard_.step) / 8, ImVec2(-1, 0));
+            ImGui::TextWrapped("%s", kPrompts[wizard_.step]);
+            ImGui::TextWrapped(
+                "Hold that position and click Capture and continue.");
+            if (ImGui::Button(wizard_.step == 7 ? "Finish calibration"
+                                                : "Capture and continue")) {
+              if (wizard_.Capture(axes_) && wizard_.step == 8) {
+                calibration_ = wizard_.result;
+                status_ =
+                    "Calibration complete. Check the live indicators and save "
+                    "your changes.";
+              }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel calibration")) {
+              wizard_.Cancel();
+            }
+            if (!wizard_.error.empty()) {
+              ImGui::TextWrapped("%s", wizard_.error.c_str());
+            }
+            if (wizard_.step >= 2) {
+              ImGui::Text("Throttle detected: axis %d",
+                          wizard_.result.throttle);
+            }
+            if (wizard_.step >= 4) {
+              ImGui::Text("Brake detected: axis %d", wizard_.result.brake);
+            }
+            if (wizard_.step >= 6) {
+              ImGui::Text("Steering detected: axis %d",
+                          wizard_.result.steering);
+            }
+          }
+          ImGui::EndTabItem();
         }
-        ImGui::TextWrapped(
-            "Paddles use LB/RB by default. Select the matching control layout "
-            "in the game.");
-        ImGui::EndTabItem();
-      }
-      if (ImGui::BeginTabItem("FFB")) {
-        ImGui::TextWrapped(
-            "Experimental native Xbox 360 wheel FFB. Supported effects depend "
-            "on "
-            "the game and wheel driver.");
-        ImGui::BeginDisabled(!calibration_.valid);
-        ImGui::Checkbox("Enable native FFB", &ffb_);
-        ImGui::SliderInt("Gain (%)", &gain_, 0, 100);
-        ImGui::Checkbox("Invert steering force", &inverted_);
-        ImGui::EndDisabled();
-        ImGui::TextWrapped(
-            "Recommended starting gain: 10%%. This window does not send test "
-            "pulses or forces.");
-        ImGui::EndTabItem();
-      }
-      if (ImGui::BeginTabItem("Live axes")) {
-        ImGui::TextWrapped(
-            "Move a control to see which axis changes. Guided calibration "
-            "detects the axes automatically.");
-        for (size_t i = 0; i < axes_.size(); ++i) {
-          ImGui::Text("Axis %d: %d", int(i), axes_[i]);
-          ImGui::ProgressBar((axes_[i] + 32768) / 65535.0f, ImVec2(-1, 0));
+        if (ImGui::BeginTabItem("Buttons and paddles")) {
+          ImGui::TextWrapped(
+              "Click Assign, then press a button or paddle on your wheel. The "
+              "first POV hat automatically controls the D-pad.");
+          for (size_t i = 0; i < bindings_.size(); ++i) {
+            ImGui::PushID(int(i));
+            ImGui::Text("%s: %s", kActions[i],
+                        bindings_[i] < 0
+                            ? "Unassigned"
+                            : std::to_string(bindings_[i]).c_str());
+            ImGui::SameLine(300);
+            if (ImGui::Button(binding_ == int(i) ? "Press a button..."
+                                                 : "Assign")) {
+              binding_ = int(i);
+              wizard_.Cancel();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Clear")) {
+              bindings_[i] = -1;
+              binding_ = -1;
+            }
+            ImGui::PopID();
+          }
+          if (binding_ >= 0 && ImGui::Button("Cancel assignment")) {
+            binding_ = -1;
+          }
+          ImGui::TextWrapped(
+              "Paddles use LB/RB by default. Select the matching control "
+              "layout "
+              "in the game.");
+          ImGui::EndTabItem();
         }
-        ImGui::EndTabItem();
+        if (ImGui::BeginTabItem("FFB")) {
+          ImGui::TextWrapped(
+              "Experimental native Xbox 360 wheel FFB. Supported effects "
+              "depend "
+              "on "
+              "the game and wheel driver.");
+          ImGui::BeginDisabled(!calibration_.valid);
+          ImGui::Checkbox("Enable native FFB", &ffb_);
+          ImGui::SliderInt("Gain (%)", &gain_, 0, 100);
+          ImGui::Checkbox("Invert steering force", &inverted_);
+          ImGui::EndDisabled();
+          ImGui::TextWrapped(
+              "Recommended starting gain: 10%%. This window does not send test "
+              "pulses or forces.");
+          ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Live axes")) {
+          ImGui::TextWrapped(
+              "Move a control to see which axis changes. Guided calibration "
+              "detects the axes automatically.");
+          for (size_t i = 0; i < axes_.size(); ++i) {
+            ImGui::Text("Axis %d: %d", int(i), axes_[i]);
+            ImGui::ProgressBar((axes_[i] + 32768) / 65535.0f, ImVec2(-1, 0));
+          }
+          ImGui::EndTabItem();
+        }
+        ImGui::EndTabBar();
       }
-      ImGui::EndTabBar();
+      ImGui::EndDisabled();
     }
-    ImGui::EndDisabled();
     ImGui::Separator();
     bool running = window_.emulator()->is_title_open();
     if (running) {
-      ImGui::TextWrapped("Close the game before saving wheel settings.");
+      ImGui::TextWrapped("Close the game before saving input settings.");
     }
-    ImGui::BeginDisabled(!joystick_ || wizard_.Active() || running);
-    if (ImGui::Button("Save and enable wheel")) {
+    ImGui::BeginDisabled(running ||
+                         (use_wheel_ && (!joystick_ || wizard_.Active())));
+    if (ImGui::Button(use_wheel_ ? "Save and enable wheel"
+                                 : "Save and use controller")) {
       Save();
     }
     ImGui::EndDisabled();

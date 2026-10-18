@@ -14,7 +14,7 @@ This fork focuses on using PC steering wheels in compatible Xbox 360 games.
 
 - SDL2 wheel input for player 1: steering, independent accelerator and brake,
   buttons, paddles, and the first POV hat.
-- An English setup window inside the emulator: **HID > Wheel setup...**.
+- An English setup window inside the emulator: **HID > Input setup...**.
 - Device selection, guided axis calibration, live input display, and button mapping.
 - Native force feedback through the common Xbox 360 `XInputdFF` functions,
   without patches tied to a particular game's executable addresses.
@@ -23,9 +23,17 @@ This fork focuses on using PC steering wheels in compatible Xbox 360 games.
 - Adjustable force gain, steering force inversion, and output that stops when
   focus or guest activity is lost.
 
-**Confirmed by the user:** Forza Motorsport 2 steering wheel input and force
-feedback work with a **MOZA R3** on Windows. This confirms that combination;
-other games, wheel models, and platforms still need individual testing.
+**Confirmed by the user:** steering wheel input and native force feedback work
+with a **MOZA R3** on Windows in:
+
+| Game | Wheel input | Native FFB |
+| --- | --- | --- |
+| Forza Motorsport 2 | Confirmed | Confirmed |
+| Forza Motorsport 3 | Confirmed | Confirmed |
+| Forza Motorsport 4 | Confirmed | Confirmed |
+
+These are user-reported physical tests. Game editions/title updates and wheel
+driver versions were not recorded; other combinations still need testing.
 
 FFB remains experimental. Periodic and ramp effects, a proportional clutch,
 and pedals connected as a separate USB device are not currently implemented.
@@ -33,8 +41,9 @@ Gamepad rumble is not converted into steering torque.
 
 ## Wheel setup
 
-1. Connect your wheel in PC mode and open **HID > Wheel setup...** without a game running.
-2. Select your device and complete **Calibration > Start guided calibration**.
+1. Connect your wheel in PC mode and open **HID > Input setup...** without a game running.
+2. Choose **Steering wheel** under **Input method**, select your device, and
+   complete **Calibration > Start guided calibration**.
 3. Configure **Buttons and paddles** and check the live steering and pedal bars.
 4. In **FFB**, select **Enable native FFB**. Start with **10% gain** and increase gradually.
 5. Select **Save and enable wheel**, then restart the emulator.
@@ -43,6 +52,15 @@ Gamepad rumble is not converted into steering torque.
 See [the detailed wheel and FFB guide](docs/wheel-ffb.md) for configuration,
 limitations, diagnostics, and tests. The setup window uses English; the detailed
 setup guide is primarily in Spanish.
+
+### Switching between controller and wheel
+
+Open **HID > Input setup...** and choose **Controller** or **Steering wheel**
+under **Input method**. Controller mode offers **Automatic**, **Xbox controller
+(XInput)** on Windows, and **Controller (SDL)**. Save without a game running,
+then restart the emulator. Controller mode disables wheel input and FFB while
+keeping the selected wheel, calibration, button mapping and FFB settings.
+Choose **Steering wheel** and save again to restore wheel mode.
 
 ## Getting started
 
@@ -73,6 +91,8 @@ They do not replace physical wheel testing.
 
 Follow the [style guide](docs/style_guide.md) and
 [contribution guidelines](.github/CONTRIBUTING.md) when contributing.
+
+See [CHANGELOG.md](CHANGELOG.md) for release notes.
 
 ## Credits and license
 

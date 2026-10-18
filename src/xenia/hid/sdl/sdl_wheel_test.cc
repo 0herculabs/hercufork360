@@ -7,6 +7,7 @@
 DECLARE_string(wheel_name);
 DECLARE_string(wheel_buttons);
 DECLARE_bool(wheel_calibrated);
+DECLARE_bool(wheel_enabled);
 DECLARE_bool(wheel_ffb);
 DECLARE_int32(wheel_brake_axis);
 DECLARE_int32(wheel_throttle_released);
@@ -124,6 +125,16 @@ int main() {
             caps.sub_type == XINPUT_DEVSUBTYPE_WHEEL && caps.flags == 0,
         "wheel subtype without false FFB capability");
   Check(!wheel.Command(WheelCommand::kAvailable, {}), "FFB disabled");
+  const auto saved_name = cvars::wheel_name;
+  cvars::wheel_enabled = false;
+  Check(!wheel.Enabled(), "controller mode disables raw wheel interception");
+  wheel.Update(true);
+  Check(!wheel.GetState(&state) && !wheel.GetCapabilities(&caps),
+        "controller mode releases the wheel device");
+  Check(cvars::wheel_name == saved_name && cvars::wheel_calibrated,
+        "controller mode keeps wheel selection and calibration");
+  cvars::wheel_enabled = true;
+  Check(wheel.Enabled(), "wheel mode can be restored without selecting again");
   SDL_JoystickDetachVirtual(index);
   wheel.Update(true);
   Check(!wheel.GetState(&state), "disconnect clears state");

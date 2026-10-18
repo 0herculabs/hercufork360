@@ -885,7 +885,7 @@ bool EmulatorWindow::Initialize() {
   auto hid_menu = MenuItem::Create(MenuItem::Type::kPopup, "&HID");
   {
     hid_menu->AddChild(MenuItem::Create(
-        MenuItem::Type::kString, "&Wheel setup...", "",
+        MenuItem::Type::kString, "&Input setup...", "",
         std::bind(&EmulatorWindow::ToggleWheelConfigDialog, this)));
     hid_menu->AddChild(MenuItem::Create(
         MenuItem::Type::kString, "&Toggle controller vibration", "",

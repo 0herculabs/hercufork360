@@ -9,6 +9,8 @@
 #include "xenia/base/cvar.h"
 #include "xenia/base/logging.h"
 
+DEFINE_bool(wheel_enabled, true,
+            "Enable raw wheel input when a wheel is selected.", "HID");
 DEFINE_string(wheel_name, "",
               "Exact SDL joystick name. Empty disables raw wheel input.",
               "HID");
@@ -95,7 +97,9 @@ bool BuildWheelEffect(const WheelEffect& s, bool inverted,
   return true;
 }
 
-bool SDLWheel::Enabled() const { return !cvars::wheel_name.empty(); }
+bool SDLWheel::Enabled() const {
+  return cvars::wheel_enabled && !cvars::wheel_name.empty();
+}
 
 bool SDLWheel::Calibrated() const {
   auto raw = [](int v) { return v >= -32768 && v <= 32767; };

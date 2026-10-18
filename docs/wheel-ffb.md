@@ -23,11 +23,19 @@ física y fuerza; se traducen sus efectos nativos, sin convertir rumble en par.
 No se incluye todavía embrague proporcional, combinación de pedales USB separados ni efectos periódicos/rampas. La entrada del volante sí puede usarse en otros
 títulos compatibles con la distribución de ejes de XInput.
 
+## User-confirmed compatibility
+
+The user has physically tested wheel input and native FFB on Windows with a
+MOZA R3 in Forza Motorsport 2, Forza Motorsport 3, and Forza Motorsport 4.
+Game editions/title updates and wheel driver versions were not recorded.
+This confirmation applies to the tested setup; it is not a guarantee for all
+versions, wheels, or other games.
+
 ## Configuración
 
 ### Desde el emulador
 
-1. Abre **HID → Wheel setup...**, sin un juego en ejecución.
+1. Abre **HID → Input setup...**, sin un juego en ejecución.
 2. Selecciona el MOZA R3 en la lista. Si no aparece, conéctalo en modo PC y
    pulsa **Refresh**.
 3. En **Calibration**, pulsa **Start guided calibration**. Sigue los ocho
@@ -156,3 +164,12 @@ an effect; operation 0 is accepted as stop as well.
 The log records the first accepted/rejected native requests, with NTSTATUS on
 failure, and the first SDL effect submissions or errors. Device-info queries
 are logged once to avoid flooding the log.
+
+### Switching between controller and wheel
+
+Open **HID > Input setup...** and choose **Controller** or **Steering wheel**
+under **Input method**. Controller mode offers **Automatic**, **Xbox controller
+(XInput)** on Windows, and **Controller (SDL)**. Save without a game running,
+then restart the emulator. Controller mode disables wheel input and FFB while
+keeping the selected wheel, calibration, button mapping and FFB settings.
+Choose **Steering wheel** and save again to restore wheel mode.
